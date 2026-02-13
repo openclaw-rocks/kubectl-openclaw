@@ -1,0 +1,39 @@
+version: 2
+
+project_name: kubectl-openclaw
+
+builds:
+  - id: kubectl-openclaw
+    main: .
+    binary: kubectl-openclaw
+    ldflags:
+      - -s -w -X github.com/openclaw-rocks/kubectl-openclaw/cmd.Version={{.Version}}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: kubectl-openclaw
+    builds:
+      - kubectl-openclaw
+    name_template: "{{ .Binary }}-{{ .Os }}-{{ .Arch }}"
+    format: tar.gz
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: openclaw-rocks
+    name: kubectl-openclaw
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"

@@ -1,0 +1,48 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: openclaw
+spec:
+  version: v0.1.0
+  homepage: https://github.com/openclaw-rocks/kubectl-openclaw
+  shortDescription: Manage OpenClaw AI agent instances on Kubernetes
+  description: |
+    kubectl-openclaw provides convenient commands for managing OpenClawInstance
+    custom resources created by the OpenClaw Kubernetes Operator.
+
+    Features:
+    - List all OpenClaw instances with status at a glance
+    - Rich status view with conditions, endpoints, and pod health
+    - Automatic pod discovery for log streaming
+    - Diagnostic checks to verify operator and instance health
+
+    Learn more: https://openclaw.rocks
+  platforms:
+    - selector:
+        matchLabels:
+          os: linux
+          arch: amd64
+      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-linux-amd64.tar.gz
+      sha256: "REPLACE_WITH_ACTUAL_SHA256"
+      bin: kubectl-openclaw
+    - selector:
+        matchLabels:
+          os: linux
+          arch: arm64
+      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-linux-arm64.tar.gz
+      sha256: "REPLACE_WITH_ACTUAL_SHA256"
+      bin: kubectl-openclaw
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: amd64
+      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-darwin-amd64.tar.gz
+      sha256: "REPLACE_WITH_ACTUAL_SHA256"
+      bin: kubectl-openclaw
+    - selector:
+        matchLabels:
+          os: darwin
+          arch: arm64
+      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-darwin-arm64.tar.gz
+      sha256: "REPLACE_WITH_ACTUAL_SHA256"
+      bin: kubectl-openclaw

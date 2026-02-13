@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update KREW manifest checksums
+        run: |
+          for platform in linux-amd64 linux-arm64 darwin-amd64 darwin-arm64; do
+            sha=$(sha256sum dist/kubectl-openclaw-${platform}.tar.gz | awk '{print $1}')
+            sed -i "s|uri:.*kubectl-openclaw-${platform}.*|uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/${{ github.ref_name }}/kubectl-openclaw-${platform}.tar.gz|" plugins/openclaw.yaml
+            # Replace the sha256 on the line after the matching uri
+            sed -i "/kubectl-openclaw-${platform}/{ n; s|sha256:.*|sha256: \"${sha}\"|; }" plugins/openclaw.yaml
+          done
+          sed -i "s|version:.*|version: ${{ github.ref_name }}|" plugins/openclaw.yaml
+          cat plugins/openclaw.yaml
