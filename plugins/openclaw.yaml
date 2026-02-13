@@ -23,26 +23,26 @@ spec:
           os: linux
           arch: amd64
       uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-linux-amd64.tar.gz
-      sha256: "REPLACE_WITH_ACTUAL_SHA256"
+      sha256: "d91c1993ec987bbaaae43e9da31c5b1396b4219647349998ce51d11c930f1ef4"
       bin: kubectl-openclaw
     - selector:
         matchLabels:
           os: linux
           arch: arm64
       uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-linux-arm64.tar.gz
-      sha256: "REPLACE_WITH_ACTUAL_SHA256"
+      sha256: "968f2cc2640d407da79cb49e9c23ddb8b67a5f77a5d22076ef14d8c13bfa59c0"
       bin: kubectl-openclaw
     - selector:
         matchLabels:
           os: darwin
           arch: amd64
       uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-darwin-amd64.tar.gz
-      sha256: "REPLACE_WITH_ACTUAL_SHA256"
+      sha256: "85c86b3b17ce26408093aa428ab2b12b096a2bbda341c8191e84874ad7106883"
       bin: kubectl-openclaw
     - selector:
         matchLabels:
           os: darwin
           arch: arm64
       uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-darwin-arm64.tar.gz
-      sha256: "REPLACE_WITH_ACTUAL_SHA256"
+      sha256: "ef96c11737de9cff73701d3e5b1a23f7cb151fea290af387531bce1c901fc9a5"
       bin: kubectl-openclaw
