@@ -15,33 +15,70 @@ func NewRootCmd() *cobra.Command {
 		Short: "Manage OpenClaw AI agent instances on Kubernetes",
 		Long: `kubectl-openclaw is a kubectl plugin for managing OpenClaw AI agent instances.
 
-It provides convenient commands for listing, inspecting, debugging, and
-diagnosing OpenClawInstance custom resources and their managed child resources.
+Tip: Set an alias for a natural CLI experience:
+  alias claw="kubectl openclaw"
 
-Usage:
-  kubectl openclaw [command]
+Lifecycle:
+  create         Create a new instance
+  delete         Delete an instance
+  restart        Restart an instance
+  upgrade        Upgrade to a new version
 
-Examples:
-  # List all instances
-  kubectl openclaw list
+Inspection:
+  list           List all instances
+  status         Detailed instance status
+  logs           Stream pod logs
+  events         Show related Kubernetes events
+  config         View or edit the configuration
 
-  # Show detailed status of an instance
-  kubectl openclaw status my-agent
+Interaction:
+  exec           Shell into an instance pod
+  port-forward   Forward gateway and canvas ports locally
+  open           Open the instance UI in your browser
 
-  # Tail logs from an instance's pod
-  kubectl openclaw logs my-agent
+Configuration:
+  skills         Manage installed skills
+  env            Manage environment variables
+  enable         Enable a sidecar (chromium, tailscale, ollama, web-terminal)
+  disable        Disable a sidecar
 
-  # Run diagnostics
-  kubectl openclaw doctor`,
+Operations:
+  backup         View backup status
+  restore        Restore from a backup
+  doctor         Run diagnostic checks`,
 		SilenceUsage: true,
 	}
 
 	cmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "path to kubeconfig file")
 	cmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "kubernetes namespace (defaults to current context namespace)")
 
+	// Lifecycle
+	cmd.AddCommand(newCreateCmd())
+	cmd.AddCommand(newDeleteCmd())
+	cmd.AddCommand(newRestartCmd())
+	cmd.AddCommand(newUpgradeCmd())
+
+	// Inspection
 	cmd.AddCommand(newListCmd())
 	cmd.AddCommand(newStatusCmd())
 	cmd.AddCommand(newLogsCmd())
+	cmd.AddCommand(newEventsCmd())
+	cmd.AddCommand(newConfigCmd())
+
+	// Interaction
+	cmd.AddCommand(newExecCmd())
+	cmd.AddCommand(newPortForwardCmd())
+	cmd.AddCommand(newOpenCmd())
+
+	// Configuration
+	cmd.AddCommand(newSkillsCmd())
+	cmd.AddCommand(newEnvCmd())
+	cmd.AddCommand(newEnableCmd())
+	cmd.AddCommand(newDisableCmd())
+
+	// Operations
+	cmd.AddCommand(newBackupCmd())
+	cmd.AddCommand(newRestoreCmd())
 	cmd.AddCommand(newDoctorCmd())
 	cmd.AddCommand(newVersionCmd())
 

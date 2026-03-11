@@ -3,18 +3,26 @@ kind: Plugin
 metadata:
   name: openclaw
 spec:
-  version: v0.1.0
+  version: v0.2.0
   homepage: https://github.com/openclaw-rocks/kubectl-openclaw
   shortDescription: Manage OpenClaw AI agent instances on Kubernetes
   description: |
-    kubectl-openclaw provides convenient commands for managing OpenClawInstance
-    custom resources created by the OpenClaw Kubernetes Operator.
+    Full lifecycle management for OpenClawInstance custom resources
+    (openclaw.rocks/v1alpha1). Alias as "claw" for a natural CLI experience.
 
-    Features:
-    - List all OpenClaw instances with status at a glance
-    - Rich status view with conditions, endpoints, and pod health
-    - Automatic pod discovery for log streaming
-    - Diagnostic checks to verify operator and instance health
+    Lifecycle:     create, delete, restart, upgrade
+    Inspection:    list, status, logs, events, config
+    Interaction:   exec, port-forward, open
+    Configuration: skills, env, enable/disable sidecars
+    Operations:    backup, restore, doctor
+
+    Examples:
+      claw create my-agent --skills web-search --chromium
+      claw skills add my-agent code-analysis
+      claw env set my-agent ANTHROPIC_API_KEY=sk-...
+      claw enable my-agent ollama --models llama3
+      claw config edit my-agent
+      claw open my-agent
 
     Learn more: https://openclaw.rocks
   platforms:
@@ -22,27 +30,27 @@ spec:
         matchLabels:
           os: linux
           arch: amd64
-      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-linux-amd64.tar.gz
-      sha256: "d91c1993ec987bbaaae43e9da31c5b1396b4219647349998ce51d11c930f1ef4"
+      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.2.0/kubectl-openclaw-linux-amd64.tar.gz
+      sha256: "PLACEHOLDER"
       bin: kubectl-openclaw
     - selector:
         matchLabels:
           os: linux
           arch: arm64
-      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-linux-arm64.tar.gz
-      sha256: "968f2cc2640d407da79cb49e9c23ddb8b67a5f77a5d22076ef14d8c13bfa59c0"
+      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.2.0/kubectl-openclaw-linux-arm64.tar.gz
+      sha256: "PLACEHOLDER"
       bin: kubectl-openclaw
     - selector:
         matchLabels:
           os: darwin
           arch: amd64
-      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-darwin-amd64.tar.gz
-      sha256: "85c86b3b17ce26408093aa428ab2b12b096a2bbda341c8191e84874ad7106883"
+      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.2.0/kubectl-openclaw-darwin-amd64.tar.gz
+      sha256: "PLACEHOLDER"
       bin: kubectl-openclaw
     - selector:
         matchLabels:
           os: darwin
           arch: arm64
-      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.1.0/kubectl-openclaw-darwin-arm64.tar.gz
-      sha256: "ef96c11737de9cff73701d3e5b1a23f7cb151fea290af387531bce1c901fc9a5"
+      uri: https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/v0.2.0/kubectl-openclaw-darwin-arm64.tar.gz
+      sha256: "PLACEHOLDER"
       bin: kubectl-openclaw

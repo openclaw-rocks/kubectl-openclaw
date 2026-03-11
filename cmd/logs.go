@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/openclaw-rocks/kubectl-openclaw/pkg/kube"
 	"github.com/spf13/cobra"
@@ -14,10 +15,12 @@ import (
 
 func newLogsCmd() *cobra.Command {
 	var (
-		follow    bool
-		container string
-		tail      int64
-		previous  bool
+		follow     bool
+		container  string
+		tail       int64
+		previous   bool
+		timestamps bool
+		since      string
 	)
 
 	cmd := &cobra.Command{
@@ -34,8 +37,23 @@ Automatically resolves the pod name from the instance name using label selectors
   # Chromium sidecar logs
   kubectl openclaw logs my-agent -c chromium
 
+  # Tailscale sidecar logs
+  kubectl openclaw logs my-agent -c tailscale
+
+  # Ollama sidecar logs
+  kubectl openclaw logs my-agent -c ollama
+
+  # Web Terminal sidecar logs
+  kubectl openclaw logs my-agent -c ttyd
+
   # Last 100 lines
   kubectl openclaw logs my-agent --tail 100
+
+  # Logs with timestamps
+  kubectl openclaw logs my-agent --timestamps
+
+  # Logs from the last hour
+  kubectl openclaw logs my-agent --since 1h
 
   # Previous container logs (after crash)
   kubectl openclaw logs my-agent --previous`,
@@ -56,9 +74,8 @@ Automatically resolves the pod name from the instance name using label selectors
 				}
 			}
 
-			// Find the pod for this instance
 			pods, err := clients.Kube.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app.kubernetes.io/name=openclaw,app.kubernetes.io/instance=%s", name),
+				LabelSelector: podLabelSelector(name),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to list pods: %w", err)
@@ -73,14 +90,23 @@ Automatically resolves the pod name from the instance name using label selectors
 			}
 
 			opts := &corev1.PodLogOptions{
-				Follow:   follow,
-				Previous: previous,
+				Follow:     follow,
+				Previous:   previous,
+				Timestamps: timestamps,
 			}
 			if container != "" {
 				opts.Container = container
 			}
 			if tail > 0 {
 				opts.TailLines = &tail
+			}
+			if since != "" {
+				duration, err := time.ParseDuration(since)
+				if err != nil {
+					return fmt.Errorf("invalid --since value %q: %w", since, err)
+				}
+				sinceSeconds := int64(duration.Seconds())
+				opts.SinceSeconds = &sinceSeconds
 			}
 
 			req := clients.Kube.CoreV1().Pods(ns).GetLogs(pod.Name, opts)
@@ -91,7 +117,6 @@ Automatically resolves the pod name from the instance name using label selectors
 			defer stream.Close()
 
 			scanner := bufio.NewScanner(stream)
-			// Increase buffer size for potentially long log lines
 			scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 			for scanner.Scan() {
 				fmt.Fprintln(cmd.OutOrStdout(), scanner.Text())
@@ -107,6 +132,8 @@ Automatically resolves the pod name from the instance name using label selectors
 	cmd.Flags().StringVarP(&container, "container", "c", "", "container name (default: openclaw main container)")
 	cmd.Flags().Int64Var(&tail, "tail", 0, "number of lines from the end of the logs to show")
 	cmd.Flags().BoolVar(&previous, "previous", false, "show logs from previous terminated container")
+	cmd.Flags().BoolVar(&timestamps, "timestamps", false, "include timestamps in log output")
+	cmd.Flags().StringVar(&since, "since", "", "show logs since duration (e.g. 1h, 30m, 2h30m)")
 
 	return cmd
 }

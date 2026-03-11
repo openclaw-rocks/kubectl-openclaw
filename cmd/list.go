@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"os"
 	"text/tabwriter"
-	"time"
 
 	"github.com/openclaw-rocks/kubectl-openclaw/pkg/kube"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 func newListCmd() *cobra.Command {
@@ -18,7 +16,7 @@ func newListCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "list",
-		Aliases: []string{"ls"},
+		Aliases: []string{"ls", "get"},
 		Short:   "List OpenClaw instances",
 		Long:    "List all OpenClawInstance resources with their phase, readiness, endpoints, and age.",
 		Example: `  # List instances in current namespace
@@ -90,82 +88,4 @@ func newListCmd() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "list instances across all namespaces")
 	return cmd
-}
-
-func getConditionStatus(status map[string]interface{}, condType string) string {
-	conditions, ok := status["conditions"]
-	if !ok {
-		return "Unknown"
-	}
-	condList, ok := conditions.([]interface{})
-	if !ok {
-		return "Unknown"
-	}
-	for _, c := range condList {
-		cond, ok := c.(map[string]interface{})
-		if !ok {
-			continue
-		}
-		if getNestedString(cond, "type") == condType {
-			return getNestedString(cond, "status")
-		}
-	}
-	return "Unknown"
-}
-
-func formatAge(t time.Time) string {
-	d := time.Since(t)
-	switch {
-	case d < time.Minute:
-		return fmt.Sprintf("%ds", int(d.Seconds()))
-	case d < time.Hour:
-		return fmt.Sprintf("%dm", int(d.Minutes()))
-	case d < 24*time.Hour:
-		return fmt.Sprintf("%dh", int(d.Hours()))
-	default:
-		return fmt.Sprintf("%dd", int(d.Hours()/24))
-	}
-}
-
-func getNestedString(obj map[string]interface{}, keys ...string) string {
-	current := obj
-	for i, key := range keys {
-		if i == len(keys)-1 {
-			val, _ := current[key].(string)
-			return val
-		}
-		next, ok := current[key].(map[string]interface{})
-		if !ok {
-			return ""
-		}
-		current = next
-	}
-	return ""
-}
-
-func unstructuredNestedMap(obj map[string]interface{}, fields ...string) (map[string]interface{}, bool, error) {
-	current := obj
-	for _, field := range fields {
-		next, ok := current[field].(map[string]interface{})
-		if !ok {
-			return nil, false, nil
-		}
-		current = next
-	}
-	return current, true, nil
-}
-
-func resolveNamespace() (string, error) {
-	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	if kubeconfig != "" {
-		rules.ExplicitPath = kubeconfig
-	}
-	ns, _, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		rules,
-		&clientcmd.ConfigOverrides{},
-	).Namespace()
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve namespace: %w", err)
-	}
-	return ns, nil
 }

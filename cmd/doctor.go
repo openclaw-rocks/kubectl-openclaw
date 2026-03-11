@@ -47,20 +47,22 @@ With a NAME argument, also checks the specific instance.`,
 
 			var results []checkResult
 
-			// Cluster-level checks
+			fmt.Println("=== Cluster Checks ===")
 			results = append(results, checkCRDInstalled(clients))
 			results = append(results, checkOperatorRunning(clients))
+			results = append(results, checkWebhooks(clients))
 
-			// Instance-level checks
 			if len(args) > 0 {
 				name := args[0]
+				fmt.Printf("\n=== Instance Checks: %s ===\n", name)
 				results = append(results, checkInstanceExists(clients, ns, name))
 				results = append(results, checkInstancePhase(clients, ns, name))
 				results = append(results, checkInstancePod(clients, ns, name))
+				results = append(results, checkInstanceStorage(clients, ns, name))
 				results = append(results, checkInstanceConditions(clients, ns, name)...)
 			}
 
-			// Print results
+			fmt.Println()
 			passed := 0
 			failed := 0
 			for _, r := range results {
@@ -95,7 +97,7 @@ func checkCRDInstalled(clients *kube.Clients) checkResult {
 		return checkResult{
 			Name:    "OpenClawInstance CRD installed",
 			Passed:  false,
-			Message: fmt.Sprintf("CRD not found: %v. Install with: helm install openclaw-operator oci://ghcr.io/openclaw-rocks/charts/openclaw-operator", err),
+			Message: fmt.Sprintf("CRD not found: %v\n          Install with: helm install openclaw-operator oci://ghcr.io/openclaw-rocks/charts/openclaw-operator", err),
 		}
 	}
 	return checkResult{
@@ -105,7 +107,6 @@ func checkCRDInstalled(clients *kube.Clients) checkResult {
 }
 
 func checkOperatorRunning(clients *kube.Clients) checkResult {
-	// Check common operator namespaces
 	operatorNamespaces := []string{
 		"openclaw-operator-system",
 		"openclaw-system",
@@ -133,6 +134,41 @@ func checkOperatorRunning(clients *kube.Clients) checkResult {
 		Name:    "OpenClaw operator running",
 		Passed:  false,
 		Message: "No running operator pod found in openclaw-operator-system or openclaw-system",
+	}
+}
+
+func checkWebhooks(clients *kube.Clients) checkResult {
+	vwcs, err := clients.Kube.AdmissionregistrationV1().ValidatingWebhookConfigurations().List(
+		context.TODO(), metav1.ListOptions{},
+	)
+	if err != nil {
+		return checkResult{
+			Name:    "Webhooks configured",
+			Passed:  false,
+			Message: fmt.Sprintf("Failed to list webhooks: %v", err),
+		}
+	}
+
+	for _, vwc := range vwcs.Items {
+		for _, wh := range vwc.Webhooks {
+			for _, rule := range wh.Rules {
+				for _, group := range rule.APIGroups {
+					if group == "openclaw.rocks" {
+						return checkResult{
+							Name:    "Webhooks configured",
+							Passed:  true,
+							Message: fmt.Sprintf("Validating webhook: %s", vwc.Name),
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return checkResult{
+		Name:    "Webhooks configured",
+		Passed:  false,
+		Message: "No validating webhooks found for openclaw.rocks API group",
 	}
 }
 
@@ -181,7 +217,7 @@ func checkInstancePhase(clients *kube.Clients, ns, name string) checkResult {
 
 func checkInstancePod(clients *kube.Clients, ns, name string) checkResult {
 	pods, err := clients.Kube.CoreV1().Pods(ns).List(context.TODO(), metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("app.kubernetes.io/name=openclaw,app.kubernetes.io/instance=%s", name),
+		LabelSelector: podLabelSelector(name),
 	})
 	if err != nil {
 		return checkResult{
@@ -194,7 +230,7 @@ func checkInstancePod(clients *kube.Clients, ns, name string) checkResult {
 		return checkResult{
 			Name:    fmt.Sprintf("Pod for %q is healthy", name),
 			Passed:  false,
-			Message: "No pods found. Check events: kubectl describe openclawinstance " + name,
+			Message: "No pods found. Run: kubectl openclaw events " + name,
 		}
 	}
 
@@ -227,6 +263,68 @@ func checkInstancePod(clients *kube.Clients, ns, name string) checkResult {
 	return checkResult{
 		Name:   fmt.Sprintf("Pod for %q is healthy", name),
 		Passed: true,
+	}
+}
+
+func checkInstanceStorage(clients *kube.Clients, ns, name string) checkResult {
+	obj, err := clients.Dynamic.Resource(kube.OpenClawGVR).Namespace(ns).Get(
+		context.TODO(), name, metav1.GetOptions{},
+	)
+	if err != nil {
+		return checkResult{
+			Name:    fmt.Sprintf("Storage for %q is ready", name),
+			Passed:  false,
+			Message: err.Error(),
+		}
+	}
+
+	status, _, _ := unstructuredNestedMap(obj.Object, "status")
+	managed, _, _ := unstructuredNestedMap(status, "managedResources")
+	pvcName := getNestedString(managed, "pvc")
+	if pvcName == "" {
+		spec, _, _ := unstructuredNestedMap(obj.Object, "spec")
+		enabled, ok := getNestedBool(spec, "storage", "persistence", "enabled")
+		if ok && !enabled {
+			return checkResult{
+				Name:    fmt.Sprintf("Storage for %q is ready", name),
+				Passed:  true,
+				Message: "Persistence disabled",
+			}
+		}
+		return checkResult{
+			Name:    fmt.Sprintf("Storage for %q is ready", name),
+			Passed:  false,
+			Message: "No PVC found in managed resources",
+		}
+	}
+
+	pvc, err := clients.Kube.CoreV1().PersistentVolumeClaims(ns).Get(
+		context.TODO(), pvcName, metav1.GetOptions{},
+	)
+	if err != nil {
+		return checkResult{
+			Name:    fmt.Sprintf("Storage for %q is ready", name),
+			Passed:  false,
+			Message: fmt.Sprintf("PVC %s not found: %v", pvcName, err),
+		}
+	}
+
+	if pvc.Status.Phase == "Bound" {
+		size := ""
+		if qty, ok := pvc.Spec.Resources.Requests["storage"]; ok {
+			size = qty.String()
+		}
+		return checkResult{
+			Name:    fmt.Sprintf("Storage for %q is ready", name),
+			Passed:  true,
+			Message: fmt.Sprintf("PVC %s bound (%s)", pvcName, size),
+		}
+	}
+
+	return checkResult{
+		Name:    fmt.Sprintf("Storage for %q is ready", name),
+		Passed:  false,
+		Message: fmt.Sprintf("PVC %s is in phase %s", pvcName, pvc.Status.Phase),
 	}
 }
 
