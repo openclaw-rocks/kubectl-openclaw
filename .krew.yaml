@@ -1,0 +1,50 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: openclaw
+spec:
+  version: {{ .TagName }}
+  homepage: https://github.com/openclaw-rocks/kubectl-openclaw
+  shortDescription: Manage OpenClaw AI agent instances on Kubernetes
+  description: |
+    Full lifecycle management for OpenClawInstance custom resources
+    (openclaw.rocks/v1alpha1). Set an alias for a natural CLI experience:
+
+      alias claw="kubectl openclaw"
+
+    Lifecycle:     create, delete, restart, upgrade
+    Inspection:    list, status, logs, events, config
+    Interaction:   exec, port-forward, open
+    Configuration: skills, env, enable/disable sidecars
+    Operations:    backup, restore, doctor
+  caveats: |
+    Requires the OpenClaw operator installed in the cluster:
+      helm install openclaw-operator oci://ghcr.io/openclaw-rocks/charts/openclaw-operator
+
+    For the best experience, set an alias:
+      alias claw="kubectl openclaw"
+  platforms:
+  - selector:
+      matchLabels:
+        os: linux
+        arch: amd64
+    {{addURIAndSha "https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/{{ .TagName }}/kubectl-openclaw-linux-amd64.tar.gz" .TagName }}
+    bin: kubectl-openclaw
+  - selector:
+      matchLabels:
+        os: linux
+        arch: arm64
+    {{addURIAndSha "https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/{{ .TagName }}/kubectl-openclaw-linux-arm64.tar.gz" .TagName }}
+    bin: kubectl-openclaw
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: amd64
+    {{addURIAndSha "https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/{{ .TagName }}/kubectl-openclaw-darwin-amd64.tar.gz" .TagName }}
+    bin: kubectl-openclaw
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: arm64
+    {{addURIAndSha "https://github.com/openclaw-rocks/kubectl-openclaw/releases/download/{{ .TagName }}/kubectl-openclaw-darwin-arm64.tar.gz" .TagName }}
+    bin: kubectl-openclaw
